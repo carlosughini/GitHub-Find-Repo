@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this,"You need to write something",Toast.LENGTH_SHORT).show()
             } else {
                 val intent = Intent(this, SearchResultActivity::class.java)
-                intent.putExtra("userRepo",searchUserRepo.text.toString())
+                intent.putExtra("username",searchUserRepo.text.toString())
                 startActivity(intent)
             }
         }

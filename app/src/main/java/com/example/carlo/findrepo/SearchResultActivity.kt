@@ -7,6 +7,8 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.support.design.widget.Snackbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,42 +31,74 @@ class SearchResultActivity : AppCompatActivity() {
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         progressBar.visibility = View.VISIBLE
 
-        if (searchTerm != null) {
-
-        } else {
-            
-        }
-
-        val callback = object : retrofit2.Callback<SearchRepo> {
-            override fun onFailure(call: Call<SearchRepo>?, t: Throwable?) {
-                println("It is not working")
-            }
-
-            override fun onResponse(call: Call<SearchRepo>?, response: Response<SearchRepo>?) {
-                val searchResult = response?.body()
-                val repositories = mutableListOf<String>()
-
-                if (searchResult != null) {
-                    for (repo in searchResult.items) {
-                        repositories.add(repo.full_name)
-                        println("Repo full name: ${repo.full_name}")
-                    }
-                }
-                val repoList = findViewById<ListView>(R.id.repoList)
-                repoList.setOnItemClickListener { parent, view, position, id ->
-                    val selectedRepo = searchResult!!.items[position]
-                    val urlIntent = Intent(Intent.ACTION_VIEW)
-                    urlIntent.data = Uri.parse(selectedRepo.html_url)
-                    startActivity(urlIntent)
-                }
-
-                val adapter = RepoAdapter(this@SearchResultActivity,android.R.layout.simple_list_item_1,searchResult!!.items)
-                repoList.adapter = adapter
-                progressBar.visibility = View.INVISIBLE
-            }
-        }
         val repoRetriever = RepoRetriever()
-        repoRetriever.getRepo(callback, searchTerm)
+
+        if (searchTerm != null) {
+            val callback = object : retrofit2.Callback<SearchRepo> {
+
+                override fun onFailure(call: Call<SearchRepo>?, t: Throwable?) {
+                    println("It is not working")
+                }
+
+                override fun onResponse(call: Call<SearchRepo>?, response: Response<SearchRepo>?) {
+                    val searchResult = response?.body()
+                    //val repositories = mutableListOf<String>()
+
+                    if (searchResult != null) {
+                        /*for (repo in searchResult.items) {
+                            repositories.add(repo.full_name)
+                            //println("Repo full name: ${repo.full_name}")
+                        }*/
+                    }
+                    val repoList = findViewById<ListView>(R.id.repoList)
+                    repoList.setOnItemClickListener { parent, view, position, id ->
+                        val selectedRepo = searchResult!!.items[position]
+                        val urlIntent = Intent(Intent.ACTION_VIEW)
+                        urlIntent.data = Uri.parse(selectedRepo.html_url)
+                        startActivity(urlIntent)
+                    }
+
+                    val adapter = RepoAdapter(this@SearchResultActivity,android.R.layout.simple_list_item_1,searchResult!!.items)
+                    repoList.adapter = adapter
+                    progressBar.visibility = View.INVISIBLE
+                }
+            }
+            repoRetriever.getRepo(callback, searchTerm)
+        } else {
+            val username = intent.getStringExtra("username")
+            val callback = object : retrofit2.Callback<List<RepoItems>> {
+
+                override fun onFailure(call: Call<List<RepoItems>>?, t: Throwable?) {
+                    println("It is not working")
+                }
+
+                override fun onResponse(call: Call<List<RepoItems>>?, response: Response<List<RepoItems>>?) {
+                    if (response?.code() == 404) {
+                        val mRootView = findViewById<View>(R.id.searchView)
+                        Snackbar.make(mRootView,"User not found! :(",Snackbar.LENGTH_LONG).show()
+                    } else {
+                        val repos = response?.body()
+                        val repositoriesNames = mutableListOf<String>()
+
+                        if (repos != null) {
+                            for (repo in repos) {
+                                repositoriesNames.add(repo.name)
+                            }
+                            val repoList = findViewById<ListView>(R.id.repoList)
+                            val adapter = RepoAdapter(this@SearchResultActivity,android.R.layout.simple_list_item_1,repos)
+                            repoList.adapter = adapter
+                        }
+                    }
+                    progressBar.visibility = View.INVISIBLE
+                }
+
+            }
+            repoRetriever.userRepos(callback, username)
+
+        }
+
+
+
     }
 }
 
